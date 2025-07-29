@@ -1,0 +1,2 @@
+C:/DevEspressif/alarma_auto_v1/build/CMakeFiles/ALL_BUILD.dir
+C:/DevEspressif/alarma_auto_v1/build/CMakeFiles/ZERO_CHECK.dir

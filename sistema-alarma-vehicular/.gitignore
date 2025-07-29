@@ -1,0 +1,83 @@
+# Archivos de compilación ESP-IDF
+build/
+build_*/
+sdkconfig
+sdkconfig.old
+sdkconfig.defaults.old
+
+# Archivos de desarrollo
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Claves y certificados (NUNCA commitear)
+herramientas/claves/*.bin
+herramientas/claves/*.key
+herramientas/claves/*.pem
+herramientas/claves/*.p12
+*.crt
+*.csr
+master_key.*
+
+# Archivos temporales
+*.tmp
+*.temp
+*.log
+*.bak
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+*.pid
+*.lock
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+.coverage
+.pytest_cache/
+
+# Archivos de documentación generada
+documentacion/*.pdf
+documentacion/*.html
+
+# Archivos de producción
+firmware_release/
+binarios_produccion/
+certificados_dispositivos/
+
+# Logs de desarrollo
+monitor_output.txt
+debug_*.log
+crash_dumps/
+
+# Dependencias de Node.js (si se añade app web)
+node_modules/
+package-lock.json
+
+# Archivos específicos de Windows
+*.lnk
+desktop.ini
+$RECYCLE.BIN/
+
+# Archivos específicos de macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Archivos específicos de Linux
+*~
+.directory
+
+# Configuraciones locales
+config_local.h
+settings_dev.json

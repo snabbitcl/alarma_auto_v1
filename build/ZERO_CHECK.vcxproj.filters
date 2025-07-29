@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\DevEspressif\alarma_auto_v1\build\CMakeFiles\68edfd45109f98a96b8e17e352bea1f8\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{4098537E-D417-3876-9FE0-4E0B3675FB75}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
