@@ -29,10 +29,10 @@ esp_err_t protocolo_init(void) {
         return ret;
     }
     
-    // Cargar claves desde eFuse
-    ret = cripto_cargar_claves_efuse();
+    // Cargar claves desde NVS seguro
+    ret = cripto_cargar_claves_nvs();
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Error cargando claves eFuse: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Error cargando claves NVS: %s", esp_err_to_name(ret));
         return ret;
     }
     

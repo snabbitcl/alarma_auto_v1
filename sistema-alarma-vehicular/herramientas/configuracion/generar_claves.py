@@ -8,6 +8,8 @@ import os
 import sys
 import secrets
 import hashlib
+import tempfile
+import subprocess
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 import argparse
@@ -65,6 +67,23 @@ def guardar_claves_archivo(dispositivo_id, clave_aes, clave_hmac, directorio='cl
         f.write(f"Clave HMAC (hex): {clave_hmac.hex()}\n")
         f.write(f"Timestamp generación: {hash(os.urandom(8))}\n")
 
+def escribir_claves_nvs(dispositivo_id, clave_aes, clave_hmac, directorio='claves'):
+    """Genera una imagen NVS con las claves"""
+    os.makedirs(directorio, exist_ok=True)
+
+    csv_path = os.path.join(directorio, f'nvs_{dispositivo_id}.csv')
+    bin_path = os.path.join(directorio, f'nvs_{dispositivo_id}.bin')
+
+    with open(csv_path, 'w') as f:
+        f.write('namespace,secure_keys\n')
+        f.write(f'aes,data,hex2bin,{clave_aes.hex()}\n')
+        f.write(f'hmac,data,hex2bin,{clave_hmac.hex()}\n')
+
+    try:
+        subprocess.run(['nvs_partition_gen.py', csv_path, bin_path, '0x1000'], check=True)
+    finally:
+        os.remove(csv_path)
+
 def generar_lote_dispositivos(cantidad, prefijo='DEV'):
     """
     Genera claves para múltiples dispositivos
@@ -78,6 +97,7 @@ def generar_lote_dispositivos(cantidad, prefijo='DEV'):
         dispositivo_id = f"{prefijo}{i:04d}"
         clave_aes, clave_hmac = generar_claves_dispositivo(dispositivo_id, clave_maestra)
         guardar_claves_archivo(dispositivo_id, clave_aes, clave_hmac)
+        escribir_claves_nvs(dispositivo_id, clave_aes, clave_hmac)
         print(f"  ✓ {dispositivo_id}")
     
     # Guardar clave maestra
@@ -98,6 +118,7 @@ def main():
         # Generar para un dispositivo
         clave_aes, clave_hmac = generar_claves_dispositivo(args.dispositivo)
         guardar_claves_archivo(args.dispositivo, clave_aes, clave_hmac)
+        escribir_claves_nvs(args.dispositivo, clave_aes, clave_hmac)
         print(f"Claves generadas para {args.dispositivo}")
         print(f"AES: {clave_aes.hex()}")
         print(f"HMAC: {clave_hmac.hex()}")

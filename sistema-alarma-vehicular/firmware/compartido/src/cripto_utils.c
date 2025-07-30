@@ -2,6 +2,9 @@
 #include "protocolo_seguro.h"  // Para ROLLING_CODE_SIZE
 #include "esp_efuse.h"
 #include "esp_hmac.h"
+#include "nvs_flash.h"
+#include "nvs.h"
+#include "mbedtls/md.h"
 #include "esp_random.h"
 #include "esp_timer.h"
 #include "mbedtls/aes.h"
@@ -45,6 +48,36 @@ esp_err_t cripto_cargar_claves_efuse(void) {
     }
 }
 
+esp_err_t cripto_cargar_claves_nvs(void) {
+    nvs_handle_t handle;
+    esp_err_t ret = nvs_open("secure_keys", NVS_READONLY, &handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "NVS open failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    size_t tam = AES_128_KEY_SIZE;
+    ret = nvs_get_blob(handle, "aes", ctx_cripto.clave_aes, &tam);
+    if (ret != ESP_OK || tam != AES_128_KEY_SIZE) {
+        nvs_close(handle);
+        ESP_LOGE(TAG, "Error leyendo clave AES: %s", esp_err_to_name(ret));
+        return (ret == ESP_OK) ? ESP_ERR_INVALID_SIZE : ret;
+    }
+
+    tam = HMAC_SHA256_SIZE;
+    ret = nvs_get_blob(handle, "hmac", ctx_cripto.clave_hmac, &tam);
+    nvs_close(handle);
+    if (ret != ESP_OK || tam != HMAC_SHA256_SIZE) {
+        ESP_LOGE(TAG, "Error leyendo clave HMAC: %s", esp_err_to_name(ret));
+        return (ret == ESP_OK) ? ESP_ERR_INVALID_SIZE : ret;
+    }
+
+    ctx_cripto.claves_cargadas = true;
+    ctx_cripto.contador_uso = 0;
+    ESP_LOGI(TAG, "Claves cargadas desde NVS");
+    return ESP_OK;
+}
+
 esp_err_t aes_ctr_cifrar(const uint8_t* plaintext, size_t len, 
                         const uint8_t* nonce, uint8_t* ciphertext) {
     if (!ctx_cripto.claves_cargadas) {
@@ -54,17 +87,8 @@ esp_err_t aes_ctr_cifrar(const uint8_t* plaintext, size_t len,
     mbedtls_aes_context aes;
     mbedtls_aes_init(&aes);
     
-    // Usar clave desde eFuse BLK3
-    uint8_t clave_aes[AES_128_KEY_SIZE];
-    esp_err_t ret = esp_efuse_read_block(EFUSE_BLK_KEY3, clave_aes, 0, AES_128_KEY_SIZE * 8);
-    if (ret != ESP_OK) {
-        mbedtls_aes_free(&aes);
-        return ret;
-    }
-    
-    int mbedtls_ret = mbedtls_aes_setkey_enc(&aes, clave_aes, 128);
+    int mbedtls_ret = mbedtls_aes_setkey_enc(&aes, ctx_cripto.clave_aes, 128);
     if (mbedtls_ret != 0) {
-        limpiar_memoria_segura(clave_aes, AES_128_KEY_SIZE);
         mbedtls_aes_free(&aes);
         return ESP_ERR_INVALID_ARG;
     }
@@ -80,7 +104,6 @@ esp_err_t aes_ctr_cifrar(const uint8_t* plaintext, size_t len,
                                        stream_block, plaintext, ciphertext);
     
     // Limpiar secretos
-    limpiar_memoria_segura(clave_aes, AES_128_KEY_SIZE);
     limpiar_memoria_segura(counter_block, 16);
     limpiar_memoria_segura(stream_block, 16);
     mbedtls_aes_free(&aes);
@@ -101,13 +124,25 @@ esp_err_t hmac_calcular(const uint8_t* data, size_t len, uint8_t* hmac_out) {
         return ESP_ERR_INVALID_STATE;
     }
     
-    // Usar periférico HMAC con clave en eFuse BLK4
-    esp_err_t ret = esp_hmac_calculate(HMAC_KEY_ID_4, data, len, hmac_out);
-    if (ret == ESP_OK) {
-        ctx_cripto.contador_uso++;
+    mbedtls_md_context_t md_ctx;
+    const mbedtls_md_info_t* info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+    mbedtls_md_init(&md_ctx);
+    int ret = mbedtls_md_setup(&md_ctx, info, 1);
+    if (ret != 0) {
+        mbedtls_md_free(&md_ctx);
+        return ESP_FAIL;
     }
-    
-    return ret;
+
+    ret = mbedtls_md_hmac_starts(&md_ctx, ctx_cripto.clave_hmac, HMAC_SHA256_SIZE);
+    if (ret == 0) ret = mbedtls_md_hmac_update(&md_ctx, data, len);
+    if (ret == 0) ret = mbedtls_md_hmac_finish(&md_ctx, hmac_out);
+    mbedtls_md_free(&md_ctx);
+
+    if (ret == 0) {
+        ctx_cripto.contador_uso++;
+        return ESP_OK;
+    }
+    return ESP_FAIL;
 }
 
 esp_err_t hmac_verificar(const uint8_t* data, size_t len, const uint8_t* hmac_esperado) {

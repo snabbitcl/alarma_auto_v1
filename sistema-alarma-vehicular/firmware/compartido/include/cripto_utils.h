@@ -34,6 +34,7 @@ typedef struct {
 // Inicialización del subsistema criptográfico
 esp_err_t cripto_init(void);
 esp_err_t cripto_cargar_claves_efuse(void);
+esp_err_t cripto_cargar_claves_nvs(void);
 
 // Funciones AES-CTR
 esp_err_t aes_ctr_cifrar(const uint8_t* plaintext, size_t len, 
