@@ -1,7 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"C:/DevEspressif/alarma_auto_v1/build/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
