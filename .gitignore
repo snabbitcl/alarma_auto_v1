@@ -1,0 +1,16 @@
+# Ignore build directories
+build/
+
+# Ignore log directories in any subdirectory
+**/log/
+
+# Ignore binary files
+*.bin
+
+# Ignore common temporary files
+*~
+*.tmp
+*.temp
+*.swp
+.DS_Store
+
