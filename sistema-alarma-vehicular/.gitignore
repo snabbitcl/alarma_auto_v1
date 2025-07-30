@@ -17,6 +17,7 @@ herramientas/claves/*.bin
 herramientas/claves/*.key
 herramientas/claves/*.pem
 herramientas/claves/*.p12
+firmware/llave/*.pem
 *.crt
 *.csr
 master_key.*
